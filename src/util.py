@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 
 import requests
-import shutil
 from RPA.Robocorp.WorkItems import WorkItems
 
 def convert_date(date_str: str) -> datetime:    
