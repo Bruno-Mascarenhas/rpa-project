@@ -30,6 +30,7 @@ def convert_date(date_str: str) -> datetime:
             dt = datetime.strptime(tmp, fmt)
             return dt
         except:
+            logging.error(f"Date format {fmt} not resolved")
             pass
     
     # Invalid date format
@@ -43,6 +44,7 @@ def download_image(url: str, download_dir: str) -> str:
         bin_image = requests.get(url, allow_redirects=True)
         open(os.path.join(download_dir, filename), "wb").write(bin_image.content)
     except Exception as e:
+        logging.error(f"Error downloading image: {e}")
         filename = ""
     return filename
 
@@ -71,12 +73,13 @@ def configure_logger() -> logging.Logger:
 
 def clear_downloads(download_dir: str) -> None:
     try:
+        logging.info("Cleaning download folder...")
         os.makedirs(download_dir, exist_ok=True)
         jpg_files = [file for file in os.listdir(download_dir) if file.endswith('.jpg') or file.endswith('.png')]
         for file in jpg_files:
             os.remove(os.path.join(download_dir, file))
-    except:
-        raise Exception("Error cleaning download folder")
+    except Exception as e:
+        logging.error(f"Error cleaning download folder: {e}")
 
 def save_to_cloud(files: list) -> None:
     # Upload files to Control Room output
@@ -85,8 +88,22 @@ def save_to_cloud(files: list) -> None:
         items.get_input_work_item()
 
         for file in files:
+            logging.info(f"Uploading file {file} to Control Room...")
             items.add_work_item_file(file)
 
         items.save_work_item()
-    except:
-        raise Exception("Error uploading files to Control Room")
+        logging.info("Files uploaded to Control Room")
+    except Exception as e:
+        logging.error(f"Error uploading files to Control Room: {e}")
+
+def get_env(env_name: str, default_value: str) -> str:
+    try:
+        items = WorkItems()
+        items.get_input_work_item()
+
+        var = items.get_work_item_variable(env_name, default_value)
+        logging.info(f"Variable {env_name} = {var}")
+    except Exception as e:
+        logging.error(f"Error getting variable {env_name}: {e}")
+        var = default_value
+    return var

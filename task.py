@@ -1,21 +1,18 @@
 import os
 import glob
 
-from dotenv import load_dotenv
 from src.news_scraper import NewsScraper
+from src.util import clear_downloads, save_to_cloud, get_env
 
-from src.util import clear_downloads, save_to_cloud
+search_phrase = get_env("SEARCH_PHRASE", "Dollar")
+news_category = get_env("NEWS_CATEGORY", "Books,Technology,Travel")
+num_months = int(get_env("NUM_MONTHS", 2))
 
-load_dotenv()
-search_phrase = os.getenv("SEARCH_PHRASE", "Dollar")
-news_category = os.getenv("NEWS_CATEGORY", "Books,Technology,Travel")
-num_months = int(os.getenv("NUM_MONTHS", 2))
-
-NUM_FILES = os.getenv("NUM_FILES", 25)
+NUM_FILES = os.getenv("NUM_FILES", 30)
 MAX_SIZE = os.getenv("MAX_SIZE", 1000000)
 
-download_folder = os.path.join(os.getcwd(), "downloads")
-excel_filename = os.path.join(os.getcwd(), "news.xlsx")
+download_folder = os.path.join(os.getcwd(), "output")
+excel_filename = os.path.join(os.getcwd(), "articles.xlsx")
 
 def main() -> None:
     # Cleaning the donwload folder (cleanup from previous runs and
