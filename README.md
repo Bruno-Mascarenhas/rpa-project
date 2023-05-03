@@ -15,7 +15,7 @@ To run the program, you will need to install the following Python dependencies:
 
 ## Usage
 
-To use the program, run the `task.py` file with the following parameters (.env file):
+To use the program, run the `task.py` file with the following parameters (.env file if local or add them as WorkItems into Robocloud):
 
 - `search_phrase`: A string containing the search phrase to be used.
 - `news_category`: A string containing the news category to be searched, separated by commas.

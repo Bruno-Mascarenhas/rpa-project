@@ -72,6 +72,7 @@ def configure_logger() -> logging.Logger:
     return logger
 
 def clear_downloads(download_dir: str) -> None:
+    # Clear download folder
     try:
         logging.info("Cleaning download folder...")
         os.makedirs(download_dir, exist_ok=True)
@@ -99,6 +100,7 @@ def save_to_cloud(files: list) -> None:
         logging.error(f"Error uploading files to Control Room: {e}")
 
 def get_env(env_name: str, default_value: str) -> str:
+    # Get environment variable from Control Room
     try:
         items = WorkItems()
         items.get_input_work_item()
