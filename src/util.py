@@ -90,7 +90,7 @@ def save_to_cloud(files: list) -> None:
         for file in files:
             logging.info(f"Uploading file {file} to Control Room...")
             items.add_work_item_file(file, os.path.basename(file))
-            items.create_output_work_item(os.basename(file))
+            items.create_output_work_item(os.basename(file), file, save=True)
 
         items.save_work_item()
         logging.info("Files uploaded to Control Room")
