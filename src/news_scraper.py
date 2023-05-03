@@ -25,11 +25,12 @@ class NewsScraper:
         self.max_files = num_files
 
         self.driver = Selenium()
-        self.driver.set_selenium_implicit_wait(10)
-        self.driver.set_selenium_speed(4)
+        self.driver.set_selenium_implicit_wait(15)
+        self.driver.set_selenium_speed(15)
 
     def __del__(self) -> None:
-        self.driver.close_all_browsers()
+        #self.driver.close_all_browsers()
+        pass
 
     def run(self) -> None:
         # Open browser and search for news according to RPA best practices
@@ -41,7 +42,8 @@ class NewsScraper:
         except Exception as e:
             logger.error(e)
         finally:
-            self.driver.close_all_browsers()
+            #self.driver.close_all_browsers()
+            pass
 
     def _close_cookie_banner(self) -> None:
         # Close cookie banner if it exists
@@ -67,6 +69,7 @@ class NewsScraper:
         self._close_cookie_banner()
         logger.info("Applying filters...")
         self.driver.click_button("xpath://button[@data-testid='search-multiselect-button']")
+        self.driver.wait_until_page_contains_element("xpath://button[@class='popup-visible css-4d08fs']")
 
         for category in self.news_category.split(","):
             try:
@@ -88,11 +91,13 @@ class NewsScraper:
 
         news = []
         ids = set()
+        first_page = True
         stop_processing = False
 
         while not stop_processing:
             # Get all articles on current page
             logger.info(f"Extracting articles..., current number of articles: {len(news)}")
+            
             articles = self.driver.find_elements("xpath:.//li[@data-testid='search-bodega-result']")            
             
             if len(articles) == 0 or len(news) >= self.max_files:
@@ -101,65 +106,75 @@ class NewsScraper:
                 logger.info(f"Finished extracting articles, total number of articles: {len(news)}")
                 break
 
-            for article in articles:
-                # Get headline, check for duplicates and filter by date
-                headline_element = article.find_element(By.XPATH, ".//h4[@class='css-2fgx4k']")
-                headline = headline_element.text
-                
-                # Hash the headline to check for duplicates
-                headline_hash = hash(headline)
-
-                if headline_hash in ids:
-                    continue
-                else:
-                    ids.add(headline_hash)
-
-                # Get date to filter articles, if older than start date, stop processing (custom format)
-                date_element = article.find_element(By.XPATH, ".//span[@class='css-17ubb9w']")
-                date_str = date_element.text
-                date = convert_date(date_str)
-                
-                if date < start_date:
-                    stop_processing = True
-                    break
-                else:
-                    logger.info(f"Processing article: {len(news)+1}")
-                    try:
-                        desc_element = article.find_element(By.XPATH, ".//p[@class='css-16nhkrn']")
-                        description = desc_element.text
-                    except Exception as e:
-                        logger.error(e)
-                        description = ""
-
-                    try:
-                        img_element = article.find_element(By.XPATH, ".//img[@class='css-rq4mmj']")
-                        img_url = img_element.get_attribute("src")
-                        logger.info(f"Downloading image: {img_url}, please wait...")
-                        img_filename = download_image(img_url, self.download_dir)
-                        logger.info(f"Image downloaded: {img_filename}")
-                    except Exception as e:
-                        logger.error(e)
-                        img_filename = ""
-
-                    # Count number of search phrase occurrences in headline and description and is contains any amount of money
-                    search_count = len(re.findall(self.search_phrase, f"{headline} {description}"))
-                    money_found = bool(re.search(r"\$[\d,.]+|[\d,.]+ dollars|\d+ USD", f"{headline} {description}"))
-
-                    # Store data in list
-                    news.append({
-                        "date": date.strftime("%Y-%m-%d"),
-                        "title": headline,
-                        "description": description,
-                        "picture_filename": img_filename,
-                        "search_count": search_count,
-                        "money_found": money_found
-                    })
+            try:
+                for article in articles:
+                    # Get headline, check for duplicates and filter by date
+                    headline_element = article.find_element(By.XPATH, ".//h4[@class='css-2fgx4k']")
+                    headline = headline_element.text
                     
+                    # Hash the headline to check for duplicates
+                    headline_hash = hash(headline)
+
+                    if headline_hash in ids:
+                        continue
+                    else:
+                        ids.add(headline_hash)
+
+                    # Get date to filter articles, if older than start date, stop processing (custom format)
+                    date_element = article.find_element(By.XPATH, ".//span[@class='css-17ubb9w']")
+                    date_str = date_element.text
+                    date = convert_date(date_str)
+                    
+                    if date < start_date:
+                        stop_processing = True
+                        break
+                    else:
+                        logger.info(f"Processing article: {len(news)+1}")
+                        try:
+                            desc_element = article.find_element(By.XPATH, ".//p[@class='css-16nhkrn']")
+                            description = desc_element.text
+                        except Exception as e:
+                            logger.error(e)
+                            description = ""
+
+                        try:
+                            img_element = article.find_element(By.XPATH, ".//img[@class='css-rq4mmj']")
+                            img_url = img_element.get_attribute("src")
+                            logger.info(f"Downloading image: {img_url}, please wait...")
+                            img_filename = download_image(img_url, self.download_dir)
+                            logger.info(f"Image downloaded: {img_filename}")
+                        except Exception as e:
+                            logger.error(e)
+                            img_filename = ""
+
+                        # Count number of search phrase occurrences in headline and description and is contains any amount of money
+                        search_count = len(re.findall(self.search_phrase, f"{headline} {description}"))
+                        money_found = bool(re.search(r"\$[\d,.]+|[\d,.]+ dollars|\d+ USD", f"{headline} {description}"))
+
+                        # Store data in list
+                        news.append({
+                            "date": date.strftime("%Y-%m-%d"),
+                            "title": headline,
+                            "description": description,
+                            "picture_filename": img_filename,
+                            "search_count": search_count,
+                            "money_found": money_found
+                        })
+
+            except Exception as e:
+                logger.error(e)
+                if first_page:
+                    # If first page fails =  is staleness of the page, false results
+                    news = []
+                    logger.info("No articles found")
+                continue
             
             # Move to next page and wait for page to load after requesting more articles
             try:
                 logger.info("Requesting more articles...")
+                self.driver.wait_until_element_is_visible("xpath://button[@data-testid='search-show-more-button']")
                 self.driver.wait_and_click_button("xpath://button[@data-testid='search-show-more-button']")
+                first_page = False
             except Exception as e:
                 logger.info("No more articles to request")
                 break
