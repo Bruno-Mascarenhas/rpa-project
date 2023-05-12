@@ -6,7 +6,7 @@ from logging.handlers import RotatingFileHandler
 import requests
 from RPA.Robocorp.WorkItems import WorkItems
 
-def convert_date(date_str: str) -> datetime:    
+def convert_date(date_str: str) -> datetime:
     now = datetime.now()
     date_str = date_str.strip().replace(".", "")
 
@@ -19,7 +19,7 @@ def convert_date(date_str: str) -> datetime:
         hours_ago = int(date_str.split('h')[0])
         delta = timedelta(hours=hours_ago)
         return now - delta
-    
+
     # Check if string is in "month day" or "month day, year" format
     for fmt in ("%B %d, %Y", "%b %d, %Y"):
         try:
@@ -27,12 +27,11 @@ def convert_date(date_str: str) -> datetime:
             if len(date_str.split(',')) == 1:
                 # add current year to string
                 tmp = f"{date_str}, {now.year}"
-            dt = datetime.strptime(tmp, fmt)
-            return dt
-        except:
-            logging.error(f"Date format {fmt} not resolved")
-            pass
-    
+            date = datetime.strptime(tmp, fmt)
+            return date
+        except ValueError:
+            logging.error("Date format %s not resolved", fmt)
+
     # Invalid date format
     raise ValueError(f"Invalid date format: {date_str}")
 
@@ -40,11 +39,12 @@ def download_image(url: str, download_dir: str) -> str:
     filename = os.path.basename(url).split("?")[0]
     # Download image from URL and save it to the download folder
     try:
-        # I did it usign requests library because I was unable to use RPA.HTTP library (triggered SO level error)
-        bin_image = requests.get(url, allow_redirects=True)
+        # I did it usign requests library because I was
+        #  unable to use RPA.HTTP library (triggered SO level error)
+        bin_image = requests.get(url, allow_redirects=True, timeout=10)
         open(os.path.join(download_dir, filename), "wb").write(bin_image.content)
-    except Exception as e:
-        logging.error(f"Error downloading image: {e}")
+    except Exception as exception:
+        logging.error("Error downloading image: %s", exception)
         filename = ""
     return filename
 
@@ -76,11 +76,12 @@ def clear_downloads(download_dir: str) -> None:
     try:
         logging.info("Cleaning download folder...")
         os.makedirs(download_dir, exist_ok=True)
-        jpg_files = [file for file in os.listdir(download_dir) if file.endswith('.jpg') or file.endswith('.png')]
+        jpg_files = [file for file in os.listdir(download_dir)
+                     if file.endswith('.jpg') or file.endswith('.png')]
         for file in jpg_files:
             os.remove(os.path.join(download_dir, file))
-    except Exception as e:
-        logging.error(f"Error cleaning download folder: {e}")
+    except Exception as exception:
+        logging.error("Error cleaning download folder: %s", exception)
 
 def save_to_cloud(files: list) -> None:
     # Upload files to Control Room output
@@ -89,25 +90,25 @@ def save_to_cloud(files: list) -> None:
         items.get_input_work_item()
 
         for file in files:
-            logging.info(f"Uploading file {file} to Control Room...")
+            logging.info("Uploading file %s to Control Room...", file)
             items.add_work_item_file(file)
 
         items.save_work_item()
         items.create_output_work_item(files=files, save=True)
 
         logging.info("Files uploaded to Control Room")
-    except Exception as e:
-        logging.error(f"Error uploading files to Control Room: {e}")
+    except Exception as exception:
+        logging.error("Error uploading files to Control Room: %s", exception)
 
 def get_env(env_name: str, default_value: str) -> str:
     # Get environment variable from Control Room
+    var = default_value
     try:
         items = WorkItems()
         items.get_input_work_item()
 
         var = items.get_work_item_variable(env_name, default_value)
-        logging.info(f"Variable {env_name} = {var}")
-    except Exception as e:
-        logging.error(f"Error getting variable {env_name}: {e}")
-        var = default_value
+        logging.info("Variable %s = %s", env_name, var)
+    except KeyError as exception:
+        logging.error("Error getting variable %s: %s", env_name, exception)
     return var
