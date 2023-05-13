@@ -83,7 +83,7 @@ def clear_downloads(download_dir: str) -> None:
     except Exception as exception:
         logging.error("Error cleaning download folder: %s", exception)
 
-def save_to_cloud(files: list) -> None:
+def save_to_cloud(files: list[str]) -> None:
     # Upload files to Control Room output
     try:
         items = WorkItems()

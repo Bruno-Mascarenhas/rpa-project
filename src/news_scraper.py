@@ -85,7 +85,8 @@ class NewsScraper:
         logger.info("Applying filters...")
         try:
             self.driver.click_button("xpath://button[@data-testid='search-multiselect-button']")
-            self.driver.wait_until_page_contains_element("xpath://button[@class='popup-visible css-4d08fs']")
+            multisel_xpath = "xpath://button[contains(@class, 'popup-visible') and @data-testid='search-multiselect-button']"
+            self.driver.wait_until_page_contains_element(multisel_xpath)
         except NoSuchElementException:
             logger.info("Section button not found")
             raise Exception("Section button not found")
@@ -150,13 +151,13 @@ class NewsScraper:
                 logger.info("Error requesting more articles: %s", exception)
                 break
 
-    def _process_articles(self, articles: list, start_date: datetime) -> bool:
+    def _process_articles(self, articles: list[WebElement], start_date: datetime) -> bool:
         stop_processing = False
 
         for article in articles:
             # Get headline, check for duplicates and filter by date
             try:
-                headline_element = article.find_element(By.XPATH, ".//h4[@class='css-2fgx4k']")
+                headline_element = article.find_element(By.XPATH, ".//li//a/*[1]")
                 headline = headline_element.text
             except StaleElementReferenceException:
                 logger.info("Stale element reference, trying again...")
@@ -171,7 +172,7 @@ class NewsScraper:
             self.ids.add(headline_hash)
 
             # Get date to filter articles, if older than start date, stop processing
-            date_element = article.find_element(By.XPATH, ".//span[@class='css-17ubb9w']")
+            date_element = article.find_element(By.XPATH, ".//span[@data-testid='todays-date']")
             date_str = date_element.text
             date = convert_date(date_str)
             
@@ -207,7 +208,7 @@ class NewsScraper:
     
     def _get_article_details(self, article: WebElement) -> tuple:
         try:
-            desc_element = article.find_element(By.XPATH, ".//p[@class='css-16nhkrn']")
+            desc_element = article.find_element(By.XPATH, ".//li//a/*[2]")
             description = desc_element.text
         except ElementNotInteractableException as exception:
             logger.error("Description not interactable: %s", exception)
@@ -217,7 +218,7 @@ class NewsScraper:
             description = ""
 
         try:
-            img_element = article.find_element(By.XPATH, ".//img[@class='css-rq4mmj']")
+            img_element = article.find_element(By.XPATH, ".//img")
             img_url = img_element.get_attribute("src")
             logger.info("Downloading image: %s, please wait...", img_url)
             img_filename = download_image(img_url, self.download_dir)
