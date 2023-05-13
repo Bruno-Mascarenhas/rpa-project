@@ -111,4 +111,4 @@ def get_env(env_name: str, default_value: str) -> str:
         logging.info("Variable %s = %s", env_name, var)
     except KeyError as exception:
         logging.error("Error getting variable %s: %s", env_name, exception)
-    return var
+    return var # type: ignore
