@@ -98,7 +98,7 @@ class NewsScraper:
                 self.driver.wait_and_click_button(f"xpath://input[contains(@value,'{category.strip()}')]")
             except ElementNotInteractableException:
                 logger.info("Category %s not interactable", category)
-            except NoSuchElementException:
+            except Exception as exception:
                 logger.info("Category %s not found", category)
 
         try:
@@ -130,7 +130,7 @@ class NewsScraper:
 
             try:
                 stop_processing = self._process_articles(articles, start_date)
-            except StaleElementReferenceException as exception:
+            except Exception as exception:
                 logger.info("Stale element reference exception: %s", exception)
                 if first_page:
                     # If first page fails = is staleness of the page, false results
@@ -157,7 +157,7 @@ class NewsScraper:
         for article in articles:
             # Get headline, check for duplicates and filter by date
             try:
-                headline_element = article.find_element(By.XPATH, ".//li//a/*[1]")
+                headline_element = article.find_element(By.XPATH, ".//a/*[1]")
                 headline = headline_element.text
             except StaleElementReferenceException:
                 logger.info("Stale element reference, trying again...")
@@ -177,6 +177,10 @@ class NewsScraper:
             date = convert_date(date_str)
             
             if date < start_date:
+                stop_processing = True
+                break
+
+            if len(self.news) >= self.max_files:
                 stop_processing = True
                 break
 
@@ -209,7 +213,7 @@ class NewsScraper:
     
     def _get_article_details(self, article: WebElement) -> tuple:
         try:
-            desc_element = article.find_element(By.XPATH, ".//li//a/*[2]")
+            desc_element = article.find_element(By.XPATH, ".//a/*[2]")
             description = desc_element.text
         except ElementNotInteractableException as exception:
             logger.error("Description not interactable: %s", exception)
@@ -249,7 +253,7 @@ class NewsScraper:
                     workbook.set_cell_value(row, col, value)
         except Exception as exception:
             logger.error("Error while storing data to EXCEL file: %s", exception)
-            raise Exception("Error while storing data to EXCEL file")
+            raise Exception("Error while storing data to EXCEL file") from exception
 
         path_excel = os.path.join(self.download_dir, self.excel_filename)
         workbook.save(path_excel)
