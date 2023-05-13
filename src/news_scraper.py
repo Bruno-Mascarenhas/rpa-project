@@ -187,7 +187,8 @@ class NewsScraper:
             except StaleElementReferenceException:
                 # If stale element reference, skip bucket and try again
                 logger.info("Stale element reference, trying again...")
-                self.ids.remove(headline_hash) if headline_hash in self.ids
+                if headline_hash in self.ids:
+                    self.ids.remove(headline_hash)
                 break
             # Count number of search phrase occurrences in headline and description
             # and if contains any amount of money
