@@ -64,7 +64,7 @@ class NewsScraper:
         except Exception as exception:
             logger.info("Cookie banner not closed duo to %s", exception)
         raise Exception("Cookie banner not closed")
-        
+
     def _search(self) -> None:
         try:
             # Search for the phrase and submit
@@ -175,7 +175,7 @@ class NewsScraper:
             date_element = article.find_element(By.XPATH, ".//span[@data-testid='todays-date']")
             date_str = date_element.text
             date = convert_date(date_str)
-            
+
             if date < start_date:
                 stop_processing = True
                 break
@@ -210,7 +210,7 @@ class NewsScraper:
             })
 
         return stop_processing
-    
+
     def _get_article_details(self, article: WebElement) -> tuple:
         try:
             desc_element = article.find_element(By.XPATH, ".//a/*[2]")
