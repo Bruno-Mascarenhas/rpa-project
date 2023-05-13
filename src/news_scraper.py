@@ -212,6 +212,8 @@ class NewsScraper:
         return stop_processing
 
     def _get_article_details(self, article: WebElement) -> tuple:
+        # Get description and image name or empty string if not found
+        description = ""
         try:
             desc_element = article.find_element(By.XPATH, ".//a/*[2]")
             description = desc_element.text
@@ -219,9 +221,8 @@ class NewsScraper:
             logger.error("Description not interactable: %s", exception)
         except NoSuchElementException as exception:
             logger.error("Description not found: %s", exception)
-        finally:
-            description = ""
-
+        
+        img_filename = ""
         try:
             img_element = article.find_element(By.XPATH, ".//img")
             img_url = img_element.get_attribute("src")
@@ -232,9 +233,7 @@ class NewsScraper:
             logger.error("Image not interactable: %s", exception)
         except NoSuchElementException as exception:
             logger.error("Image not found: %s", exception)
-        finally:
-            img_filename = ""
-
+        
         return description, img_filename
 
     def _store_news(self) -> None:
